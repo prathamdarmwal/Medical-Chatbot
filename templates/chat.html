@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediBot - Healthcare Assistant</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>🩺 MediBot</h1>
+            <p>Your Personal Healthcare Assistant</p>
+        </div>
+        
+        <div class="chat-box" id="chat-box">
+            <!-- Messages will be inserted here -->
+        </div>
+
+        <form class="input-area" id="chat-form" onsubmit="sendMessage(event)">
+            <input type="text" name="msg" id="user-input" 
+                   placeholder="Type your health-related question here..." 
+                   autocomplete="off" required>
+            <button type="submit" id="send-btn">📩 Send</button>
+        </form>
+    </div>
+
+    <script>
+        function appendMessage(message, isUser) {
+            const chatBox = document.getElementById('chat-box');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
+            
+            messageDiv.innerHTML = `
+                <div class="message-content">${message}</div>
+                <div class="message-time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+            `;
+            
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        async function sendMessage(event) {
+            event.preventDefault();
+            const inputField = document.getElementById('user-input');
+            const userMessage = inputField.value.trim();
+            
+            if (!userMessage) return;
+
+            // Clear input and disable during processing
+            inputField.value = '';
+            inputField.disabled = true;
+            document.getElementById('send-btn').disabled = true;
+
+            // Append user message
+            appendMessage(userMessage, true);
+
+            try {
+                const response = await fetch('/ask', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `msg=${encodeURIComponent(userMessage)}`
+                });
+                
+                const botResponse = await response.text();
+                appendMessage(botResponse, false);
+            } catch (error) {
+                console.error('Error:', error);
+                appendMessage('Sorry, I encountered an error. Please try again.', false);
+            }
+
+            // Re-enable input
+            inputField.disabled = false;
+            document.getElementById('send-btn').disabled = false;
+            inputField.focus();
+        }
+    </script>
+</body>
+</html>
